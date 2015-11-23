@@ -22,12 +22,13 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.Neo4jException;
-import org.neo4j.jdbc.Neo4jDatabaseMetaData;
 
 import java.sql.*;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
+
+//import org.neo4j.jdbc.Neo4jDatabaseMetaData;
 
 /**
  * @author Stefan Armbruster
@@ -94,7 +95,8 @@ public class ConnectionImpl implements Connection {
 
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        return new Neo4jDatabaseMetaData(this);
+        throw new UnsupportedOperationException();
+//        return new Neo4jDatabaseMetaData(this);
     }
 
     @Override

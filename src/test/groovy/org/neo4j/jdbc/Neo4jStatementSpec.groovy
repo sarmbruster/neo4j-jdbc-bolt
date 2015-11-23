@@ -125,11 +125,11 @@ class Neo4jStatementSpec extends Specification {
         "foo"    | SQLException     | "invalid column name for result set: foo"
     }
 
-    def "use groovy's GSQL"() {
+    def "use groovy's SQL"() {
         when:
         def sql = Sql.newInstance(DriverSpec.JDBC_BOLT_URL)
         // in parameterized GSQL, labels and reltypes need to be quoted in backticks
-        def r = sql.execute("create (n:`Dummy` {1})", [[name: 'myself' ]])
+        def r = sql.execute("create (n:`Dummy` {1})", [[name: 'myself']])
 
         then:
         r == false
@@ -142,5 +142,23 @@ class Neo4jStatementSpec extends Specification {
         r.next()
         r.getInt("c") == 1
         !r.next()
+
+        when:
+        def names = []
+        sql.eachRow("match (n:Dummy) return n.name as name", {
+            names << it.name
+        })
+
+        then:
+        names == ["myself"]
+
+        when:
+        names = []
+        sql.eachRow("match (n:Dummy) return n", {
+            names << it.n.property("name").javaString()
+        })
+
+        then:
+        names == ["myself"]
     }
 }

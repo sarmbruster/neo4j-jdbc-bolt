@@ -48,7 +48,7 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public void close() throws SQLException {
-        throw new UnsupportedOperationException();
+        statement.close();
     }
 
     @Override
@@ -407,7 +407,7 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public int getType() throws SQLException {
-        throw new UnsupportedOperationException();
+        return ResultSet.TYPE_FORWARD_ONLY;
     }
 
     @Override
