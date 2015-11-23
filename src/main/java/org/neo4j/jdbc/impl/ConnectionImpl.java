@@ -139,12 +139,12 @@ public class ConnectionImpl implements Connection {
 
     @Override
     public StatementImpl createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
-        throw new UnsupportedOperationException();
+        return createStatement();
     }
 
     @Override
     public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
-        throw new UnsupportedOperationException();
+        return prepareStatement(sql);
     }
 
     @Override
