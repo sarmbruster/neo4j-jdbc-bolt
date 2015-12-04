@@ -18,9 +18,7 @@
  */
 package org.neo4j.jdbc.impl;
 
-import org.neo4j.driver.ResultSummary;
 import org.neo4j.driver.StatementType;
-import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.Value;
 
 import java.io.InputStream;
@@ -41,7 +39,6 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 
     private final String cypher;
     private Map<String, Value> parameters = new HashMap<>();
-    private ResultSummary summary;
 
     public PreparedStatementImpl(ConnectionImpl connection, String cypher) {
         super(connection);
@@ -50,7 +47,7 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 
     @Override
     public ResultSet executeQuery() throws SQLException {
-        return new ResultSetImpl(this, connection.executeQuery(cypher, parameters));
+        return new ResultSetImpl(this, connection.executeQuery(cypher, parameters), getMaxRows());
     }
 
     @Override
@@ -161,18 +158,9 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
     }
 
     @Override
-    public int getUpdateCount() throws SQLException {
-        UpdateStatistics statistics = summary.updateStatistics();
-        return statistics.nodesCreated() + statistics.nodesDeleted() +
-                statistics.relationshipsCreated() + statistics.relationshipsDeleted() +
-                statistics.propertiesSet() +
-                statistics.labelsAdded() + statistics.labelsRemoved();
-    }
-
-    @Override
     public boolean execute() throws SQLException {
-        summary = connection.executeQuery(cypher, parameters).summarize();
-        StatementType type = summary.statementType();
+        setResult(connection.executeQuery(cypher, parameters));
+        StatementType type = getSummary().statementType();
         switch (type) {
             case WRITE_ONLY:
                 return false;

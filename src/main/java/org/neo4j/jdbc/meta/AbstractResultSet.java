@@ -18,8 +18,6 @@
  */
 package org.neo4j.jdbc.meta;
 
-import org.neo4j.jdbc.Neo4jColumnMetaData;
-
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
@@ -355,7 +353,7 @@ public abstract class AbstractResultSet implements ResultSet
     @Override
     public ResultSetMetaData getMetaData() throws SQLException
     {
-        return new Neo4jResultSetMetaData(columns);
+        return new Neo4jResultSetMetaData(Arrays.asList(columnNames));
 //        return conn.debug( new Neo4jResultSetMetaData( columns ) );
     }
 

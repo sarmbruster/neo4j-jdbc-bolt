@@ -42,6 +42,7 @@ public class ConnectionImpl implements Connection {
     private boolean readOnly = false;
     private boolean closed = false;
     private GraphMetaData graphMetaData;
+    private boolean autoCommit = true;
 
     public ConnectionImpl(Session session) {
         this.session = session;
@@ -69,12 +70,12 @@ public class ConnectionImpl implements Connection {
 
     @Override
     public void setAutoCommit(boolean autoCommit) throws SQLException {
-        throw new UnsupportedOperationException();
+        this.autoCommit = autoCommit;
     }
 
     @Override
     public boolean getAutoCommit() throws SQLException {
-        throw new UnsupportedOperationException();
+        return autoCommit;
     }
 
     @Override
@@ -119,7 +120,7 @@ public class ConnectionImpl implements Connection {
 
     @Override
     public String getCatalog() throws SQLException {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override

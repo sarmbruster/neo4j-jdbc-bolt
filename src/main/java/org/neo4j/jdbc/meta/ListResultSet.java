@@ -18,8 +18,6 @@
  */
 package org.neo4j.jdbc.meta;
 
-import org.neo4j.jdbc.Neo4jColumnMetaData;
-
 import java.sql.SQLException;
 import java.util.List;
 

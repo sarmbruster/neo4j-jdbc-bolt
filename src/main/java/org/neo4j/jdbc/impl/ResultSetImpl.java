@@ -20,6 +20,8 @@ package org.neo4j.jdbc.impl;
 
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.util.Iterables;
+import org.neo4j.jdbc.meta.Neo4jResultSetMetaData;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -35,14 +37,21 @@ import java.util.*;
 public class ResultSetImpl implements ResultSet {
     private final Result result;
     private final Statement statement;
+    private final int maxRows;
+    private int currentRow = 0;
 
-    public ResultSetImpl(Statement statement, Result result) {
+    public ResultSetImpl(Statement statement, Result result, int maxRows) {
         this.statement = statement;
         this.result = result;
+        this.maxRows = maxRows;
     }
 
     @Override
     public boolean next() throws SQLException {
+        if (maxRows>0) {
+          if (currentRow >= maxRows) { return false; }
+        }
+        currentRow++;
         return result.next();
     }
 
@@ -233,7 +242,7 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public ResultSetMetaData getMetaData() throws SQLException {
-        throw new UnsupportedOperationException();
+        return new Neo4jResultSetMetaData(Iterables.toList(result.fieldNames()));
     }
 
     @Override

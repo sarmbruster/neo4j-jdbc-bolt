@@ -28,7 +28,6 @@ class DriverSpec extends Specification {
         url                            | accepted
         JDBC_BOLT_URL                  | true
         "jdbc:derby://localhost:7474/" | false
-
     }
 
     def "positive connection check"()

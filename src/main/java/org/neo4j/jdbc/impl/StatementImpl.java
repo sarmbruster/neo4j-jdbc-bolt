@@ -19,6 +19,8 @@
 package org.neo4j.jdbc.impl;
 
 import org.neo4j.driver.Result;
+import org.neo4j.driver.ResultSummary;
+import org.neo4j.driver.UpdateStatistics;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -33,6 +35,8 @@ public class StatementImpl implements Statement {
     protected final ConnectionImpl connection;
 
     private Result result;
+    private int maxRows = 0;
+    private ResultSummary summary;
 
     public StatementImpl(ConnectionImpl connection) {
         this.connection = connection;
@@ -40,14 +44,32 @@ public class StatementImpl implements Statement {
 
     @Override
     public ResultSetImpl executeQuery(String cypher) throws SQLException {
-        result = connection.executeQuery(cypher, Collections.EMPTY_MAP);
+        setResult(connection.executeQuery(cypher, Collections.EMPTY_MAP));
         return getResultSet();
     }
 
     @Override
     public int executeUpdate(String cypher) throws SQLException {
-        return count(connection.executeQuery(cypher, Collections.EMPTY_MAP));
+        executeQuery(cypher);
+        return getUpdateCount();
     }
+
+    public ResultSummary getSummary() {
+        if (summary==null) {
+            summary = result.summarize();
+        }
+        return summary;
+    }
+
+    public Result getResult() {
+        return result;
+    }
+
+    public void setResult(Result result) {
+        this.result = result;
+        this.summary = null;
+    }
+
 
     protected int count(Result result) {
         int count = 0;
@@ -76,14 +98,12 @@ public class StatementImpl implements Statement {
 
     @Override
     public int getMaxRows() throws SQLException {
-        throw new UnsupportedOperationException();
-//        return 0;
+        return maxRows;
     }
 
     @Override
     public void setMaxRows(int max) throws SQLException {
-        throw new UnsupportedOperationException();
-
+        this.maxRows = max;
     }
 
     @Override
@@ -136,13 +156,16 @@ public class StatementImpl implements Statement {
 
     @Override
     public ResultSetImpl getResultSet() throws SQLException {
-        return new ResultSetImpl(this, result);
+        return new ResultSetImpl(this, result,  maxRows);
     }
 
     @Override
     public int getUpdateCount() throws SQLException {
-        throw new UnsupportedOperationException();
-//        return 0;
+        UpdateStatistics statistics = getSummary().updateStatistics();
+        return statistics.nodesCreated() + statistics.nodesDeleted() +
+                statistics.relationshipsCreated() + statistics.relationshipsDeleted() +
+                statistics.propertiesSet() +
+                statistics.labelsAdded() + statistics.labelsRemoved();
     }
 
     @Override
