@@ -10,10 +10,10 @@ import java.sql.*
 class Neo4jStatementSpec extends Specification {
 
     @Rule
-    public TestNeo4j neo4j = new TestNeo4j();
+    public TestNeo4j neo4j = new TestNeo4j()
 
-    long nodeId;
-    Connection conn;
+    long nodeId
+    Connection conn
 
     long createNode() throws SQLException {
         ResultSet rs = conn.createStatement().executeQuery("merge (n:Root {name:'root'}) return id(n) as id");

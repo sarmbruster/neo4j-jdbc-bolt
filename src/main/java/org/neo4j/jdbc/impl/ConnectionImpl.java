@@ -22,6 +22,9 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.jdbc.meta.FullScanCachedGraphMetaData;
+import org.neo4j.jdbc.meta.GraphMetaData;
+import org.neo4j.jdbc.meta.Neo4jDatabaseMetaData;
 
 import java.sql.*;
 import java.util.Map;
@@ -38,6 +41,7 @@ public class ConnectionImpl implements Connection {
     private final Session session;
     private boolean readOnly = false;
     private boolean closed = false;
+    private GraphMetaData graphMetaData;
 
     public ConnectionImpl(Session session) {
         this.session = session;
@@ -95,8 +99,7 @@ public class ConnectionImpl implements Connection {
 
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        throw new UnsupportedOperationException();
-//        return new Neo4jDatabaseMetaData(this);
+        return new Neo4jDatabaseMetaData(this);
     }
 
     @Override
@@ -349,4 +352,10 @@ public class ConnectionImpl implements Connection {
         return query.matches( "(?is).*\\b(create|relate|delete|set)\\b.*" );
     }
 
+    public GraphMetaData getGraphMetaData() {
+        if (graphMetaData==null) {
+            graphMetaData = new FullScanCachedGraphMetaData(session);
+        }
+        return graphMetaData;
+    }
 }
