@@ -2,4 +2,23 @@
 
 WARNING: this is an early stage experimental project
 
+## minimum viable snippet
 
+Build the driver:
+
+    ./gradlew shadowJar
+
+This builds an jar containing all dependencies to `build/libs/neo4j-jdbc-bolt-<version>-all.jar`
+
+The easiest way to use JDBC is via Groovy's SQL interface:
+
+    #!/usr/bin/env groovy
+
+    import groovy.sql.*
+
+    def sql = Sql.newInstance('jdbc:neo4j:bolt://localhost')
+    sql.eachRow("match (m:`Movie` {title:{1}})<-[:`ACTED_IN`]-(person) return person.name, person.born" , ['The Matrix']) {
+        println it.toRowResult().values().join(",")
+    }
+
+To run this script: `groovy -cp build/libs/neo4j-jdbc-bolt-<version>-all.jar my_jdbc_script.groovy`
