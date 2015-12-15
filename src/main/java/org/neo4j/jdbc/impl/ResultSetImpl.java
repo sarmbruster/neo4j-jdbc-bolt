@@ -18,6 +18,7 @@
  */
 package org.neo4j.jdbc.impl;
 
+import org.neo4j.driver.Notification;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.util.Iterables;
@@ -39,6 +40,8 @@ public class ResultSetImpl implements ResultSet {
     private final Statement statement;
     private final int maxRows;
     private int currentRow = 0;
+    private Value lastReadValue = null;
+    private Neo4jResultSetMetaData meta;
 
     public ResultSetImpl(Statement statement, Result result, int maxRows) {
         this.statement = statement;
@@ -48,7 +51,7 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public boolean next() throws SQLException {
-        if (maxRows>0) {
+        if (maxRows > 0) {
           if (currentRow >= maxRows) { return false; }
         }
         currentRow++;
@@ -62,7 +65,7 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public boolean wasNull() throws SQLException {
-        throw new UnsupportedOperationException();
+        return lastReadValue == null;
     }
 
     @Override
@@ -227,12 +230,28 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public SQLWarning getWarnings() throws SQLException {
-        throw new UnsupportedOperationException();
+        List<Notification> notifications = result.summarize().notifications();
+
+        SQLWarning firstWarning = null;
+        SQLWarning prevWarning = null;
+
+        for (Notification notification: notifications) {
+            SQLWarning warning = new SQLWarning(notification.title() + " " +  notification.description(), notification.code());
+            if (firstWarning == null ) {
+                firstWarning = warning;
+                prevWarning = warning;
+            } else {
+                prevWarning.setNextWarning(warning);
+                prevWarning = warning;
+            }
+        }
+        return firstWarning;
     }
 
     @Override
     public void clearWarnings() throws SQLException {
-        throw new UnsupportedOperationException();
+        // pass
+        //throw new UnsupportedOperationException();
     }
 
     @Override
@@ -242,7 +261,12 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public ResultSetMetaData getMetaData() throws SQLException {
-        return new Neo4jResultSetMetaData(Iterables.toList(result.fieldNames()));
+        if (meta == null) {
+            meta = new Neo4jResultSetMetaData(Iterables.toList(result.fieldNames()));
+        } else {
+            System.out.println("reusing resultset meta data");
+        }
+        return meta;
     }
 
     @Override
@@ -291,20 +315,20 @@ public class ResultSetImpl implements ResultSet {
     }
 
     private Value safeGet(int columnIndex) throws SQLException {
-
         try {
-            return result.get(columnIndex-1);
+            lastReadValue = result.get(columnIndex - 1);
+            return lastReadValue;
         } catch (IndexOutOfBoundsException e) {
             throw new SQLDataException("invalid column index", e);
         }
     }
 
     private Value safeGet(String columnLabel) throws SQLException {
-        Value value = result.get(columnLabel);
-        if (value == null) {
+        lastReadValue = result.get(columnLabel);
+        if (lastReadValue == null) {
             throw new SQLDataException("invalid column name for result set: " + columnLabel);
         } else {
-            return value;
+            return lastReadValue;
         }
     }
 
@@ -361,7 +385,6 @@ public class ResultSetImpl implements ResultSet {
     @Override
     public void afterLast() throws SQLException {
         throw new UnsupportedOperationException();
-
     }
 
     @Override

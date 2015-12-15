@@ -43,6 +43,7 @@ public class ConnectionImpl implements Connection {
     private boolean closed = false;
     private GraphMetaData graphMetaData;
     private boolean autoCommit = true;
+    private DatabaseMetaData metaData;
 
     public ConnectionImpl(Session session) {
         this.session = session;
@@ -100,7 +101,10 @@ public class ConnectionImpl implements Connection {
 
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        return new Neo4jDatabaseMetaData(this);
+        if (metaData == null) {
+            metaData = new Neo4jDatabaseMetaData(this);
+        }
+        return metaData;
     }
 
     @Override
@@ -135,12 +139,14 @@ public class ConnectionImpl implements Connection {
 
     @Override
     public SQLWarning getWarnings() throws SQLException {
-        throw new UnsupportedOperationException();
+        // TODO: check if we have warnings on connection level
+        return null;
     }
 
     @Override
     public void clearWarnings() throws SQLException {
-        throw new UnsupportedOperationException();
+        // pass
+//        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -358,5 +364,9 @@ public class ConnectionImpl implements Connection {
             graphMetaData = new FullScanCachedGraphMetaData(session);
         }
         return graphMetaData;
+    }
+
+    public Session getSession() {
+        return session;
     }
 }

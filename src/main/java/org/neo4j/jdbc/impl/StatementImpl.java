@@ -20,7 +20,6 @@ package org.neo4j.jdbc.impl;
 
 import org.neo4j.driver.Result;
 import org.neo4j.driver.ResultSummary;
-import org.neo4j.driver.UpdateStatistics;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -132,13 +131,13 @@ public class StatementImpl implements Statement {
 
     @Override
     public SQLWarning getWarnings() throws SQLException {
-        throw new UnsupportedOperationException();
-//        return null;
+//        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
     public void clearWarnings() throws SQLException {
-        throw new UnsupportedOperationException();
+//        throw new UnsupportedOperationException();
 
     }
 
@@ -161,11 +160,13 @@ public class StatementImpl implements Statement {
 
     @Override
     public int getUpdateCount() throws SQLException {
-        UpdateStatistics statistics = getSummary().updateStatistics();
+        return 0; // FIXME: for now getSummary() causes exhausting the result's iterator
+
+        /*UpdateStatistics statistics = getSummary().updateStatistics();
         return statistics.nodesCreated() + statistics.nodesDeleted() +
                 statistics.relationshipsCreated() + statistics.relationshipsDeleted() +
                 statistics.propertiesSet() +
-                statistics.labelsAdded() + statistics.labelsRemoved();
+                statistics.labelsANeo4jResultSetMetaDatadded() + statistics.labelsRemoved();*/
     }
 
     @Override

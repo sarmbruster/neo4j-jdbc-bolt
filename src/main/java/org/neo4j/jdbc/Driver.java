@@ -19,6 +19,7 @@
 package org.neo4j.jdbc;
 
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.jdbc.impl.ConnectionImpl;
 
 import java.sql.DriverManager;
@@ -49,8 +50,12 @@ public class Driver implements java.sql.Driver {
     @Override
     public ConnectionImpl connect(String url, Properties info) throws SQLException {
         if (acceptsURL(url)) {
-            String boltDriverUrl = url.substring(URL_JDBC.length());
-            return new ConnectionImpl(GraphDatabase.driver(boltDriverUrl).session());
+            try {
+                String boltDriverUrl = url.substring(URL_JDBC.length());
+                return new ConnectionImpl(GraphDatabase.driver(boltDriverUrl).session());
+            } catch (Neo4jException e) {
+                throw new SQLException(e);
+            }
         } else {
             throw new SQLException("don't accept url " + url);
         }

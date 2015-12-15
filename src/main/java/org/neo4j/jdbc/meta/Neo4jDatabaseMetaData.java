@@ -18,6 +18,7 @@
  */
 package org.neo4j.jdbc.meta;
 
+import org.neo4j.driver.Result;
 import org.neo4j.jdbc.impl.ConnectionImpl;
 
 import java.sql.*;
@@ -28,8 +29,8 @@ import java.util.Map;
  * Provides metadata about a Neo4j database. Tables are implemented with type nodes, and columns are property nodes
  * attached to those type nodes.
  */
-public class Neo4jDatabaseMetaData
-        implements DatabaseMetaData {
+public class Neo4jDatabaseMetaData implements DatabaseMetaData {
+
     private ConnectionImpl connectionImpl;
 
     public Neo4jDatabaseMetaData(ConnectionImpl connectionImpl) {
@@ -90,8 +91,8 @@ public class Neo4jDatabaseMetaData
 
     @Override
     public String getDatabaseProductVersion() throws SQLException {
-        throw new UnsupportedOperationException();
-//        return connectionImpl.getVersion().getVersion();
+        Result result = connectionImpl.getSession().run("explain match (n) return n limit 1");
+        return result.summarize().plan().arguments().get("version").javaString(); // TODO: change this to Neo4j instance version information when bolt supports it
     }
 
     @Override
@@ -667,7 +668,8 @@ public class Neo4jDatabaseMetaData
     public ResultSet getSchemas() throws SQLException {
         return new ResultSetBuilder().
                 column("TABLE_SCHEM").column("TABLE_CATALOG").
-                row(null, null).newResultSet(connectionImpl);
+//                row(null, null).newResultSet(connectionImpl);
+                newResultSet(connectionImpl);
     }
 
     @Override
@@ -951,7 +953,7 @@ public class Neo4jDatabaseMetaData
 
     @Override
     public RowIdLifetime getRowIdLifetime() throws SQLException {
-        return null;
+        return RowIdLifetime.ROWID_UNSUPPORTED;
     }
 
     @Override

@@ -37,6 +37,7 @@ public abstract class AbstractResultSet implements ResultSet
     private String[] columnNames;
     private int cols;
     private boolean wasNull = false;
+    private Neo4jResultSetMetaData metaData;
 //    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Override
@@ -353,7 +354,12 @@ public abstract class AbstractResultSet implements ResultSet
     @Override
     public ResultSetMetaData getMetaData() throws SQLException
     {
-        return new Neo4jResultSetMetaData(Arrays.asList(columnNames));
+        if (metaData==null) {
+            metaData = new Neo4jResultSetMetaData(Arrays.asList(columnNames));
+        } else {
+            System.out.println("HURZ");
+        }
+        return metaData;
 //        return conn.debug( new Neo4jResultSetMetaData( columns ) );
     }
 

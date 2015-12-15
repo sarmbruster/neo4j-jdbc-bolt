@@ -20,6 +20,7 @@ package org.neo4j.jdbc.meta;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.List;
 
 public class Neo4jResultSetMetaData implements ResultSetMetaData {
@@ -72,7 +73,7 @@ public class Neo4jResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public String getColumnLabel(int i) throws SQLException {
-        return fieldNames.get(i-1);
+        return getColumnName(i);
     }
 
     @Override
@@ -82,7 +83,7 @@ public class Neo4jResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public String getSchemaName(int i) throws SQLException {
-        return "Default";
+        return null;
     }
 
     @Override
@@ -97,22 +98,24 @@ public class Neo4jResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public String getTableName(int i) throws SQLException {
-        return null;
+        return "";
     }
 
     @Override
     public String getCatalogName(int i) throws SQLException {
-        return "Default";
+        return "";
     }
 
     @Override
     public int getColumnType(int i) throws SQLException {
-        return 0;   // TODO: fix with {@link java.sql.Types}
+        return Types.VARCHAR;
+//        return 0;   // TODO: fix with {@link java.sql.Types}
     }
 
     @Override
     public String getColumnTypeName(int i) throws SQLException {
-        return null; // TODO: fix with {@link java.sql.Types}
+        return "VARCHAR";
+//        return null; // TODO: fix with {@link java.sql.Types}
     }
 
     @Override
@@ -132,7 +135,7 @@ public class Neo4jResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public String getColumnClassName(int i) throws SQLException {
-        return null; // FIXME: 04.12.15
+        return null;
     }
 
     @Override
