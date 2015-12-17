@@ -12,6 +12,10 @@ class ResultSetImplSpec extends Specification {
 
     Result result = Mock()
 
+    def setup() {
+        result.fieldNames() >> []
+    }
+
     def "validate maxRows setting is used"() {
         when: "execute next() 10 times"
         def cut = new ResultSetImpl(null, result, maxRows)

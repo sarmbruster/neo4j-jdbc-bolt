@@ -697,11 +697,11 @@ public class Neo4jDatabaseMetaData implements DatabaseMetaData {
                 column("TABLE_SCHEM").
                 column("TABLE_NAME").
                 column("COLUMN_NAME").
-                column("DATA_TYPE", Types.INTEGER).
+                column("DATA_TYPE").
                 column("TYPE_NAME").
-                column("COLUMN_SIZE", Types.INTEGER).
+                column("COLUMN_SIZE").
                 column("BUFFER_LENGTH").
-                column("DECIMAL_DIGITS", Types.INTEGER).
+                column("DECIMAL_DIGITS").
                 column("NUM_PREC_RADIX").
                 column("NULLABLE").
                 column("REMARKS").
@@ -768,7 +768,7 @@ public class Neo4jDatabaseMetaData implements DatabaseMetaData {
                 column("TABLE_SCHEM").
                 column("TABLE_NAME").
                 column("COLUMN_NAME").
-                column("KEY_SEQ", Types.SMALLINT).
+                column("KEY_SEQ").
                 column("PK_NAME").
                 newResultSet(connectionImpl);
     }

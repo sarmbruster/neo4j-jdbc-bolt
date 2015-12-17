@@ -20,7 +20,10 @@ package org.neo4j.jdbc.impl;
 
 import org.neo4j.driver.Result;
 import org.neo4j.driver.ResultSummary;
+import org.neo4j.driver.UpdateStatistics;
+import org.neo4j.driver.internal.SimpleResult;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
@@ -160,13 +163,30 @@ public class StatementImpl implements Statement {
 
     @Override
     public int getUpdateCount() throws SQLException {
-        return 0; // FIXME: for now getSummary() causes exhausting the result's iterator
-
-        /*UpdateStatistics statistics = getSummary().updateStatistics();
+        UpdateStatistics statistics = getSummaryWithoutExhaustingIterator().updateStatistics();
         return statistics.nodesCreated() + statistics.nodesDeleted() +
                 statistics.relationshipsCreated() + statistics.relationshipsDeleted() +
                 statistics.propertiesSet() +
-                statistics.labelsANeo4jResultSetMetaDatadded() + statistics.labelsRemoved();*/
+                statistics.labelsAdded() + statistics.labelsRemoved();
+    }
+
+    /**
+     * workaround to do {@link Result#summarize()} without exhausting the iterator
+     * @return
+     */
+    private ResultSummary getSummaryWithoutExhaustingIterator() {
+        if (result instanceof SimpleResult)  {
+            try {
+                Field summaryField = SimpleResult.class.getDeclaredField("summary");
+                summaryField.setAccessible(true);
+                return (ResultSummary) summaryField.get(result);
+            } catch (NoSuchFieldException e) {
+                throw new RuntimeException(e);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        throw new IllegalStateException("cannot access summary of a " + result.getClass().getName());
     }
 
     @Override

@@ -25,7 +25,6 @@ import spock.lang.Specification
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.ResultSet
-import java.sql.SQLException
 
 class Neo4jDatabaseMetaDataSpec extends Specification {
 
@@ -36,7 +35,7 @@ class Neo4jDatabaseMetaDataSpec extends Specification {
 
     def setup() {
         conn = DriverManager.getConnection(DriverSpec.JDBC_BOLT_URL);
-        conn.createStatement().execute("create (:Person)");
+        conn.createStatement().execute("create (:Person{name:'John'})");
     }
 
     def "get schemas"() {
@@ -44,29 +43,11 @@ class Neo4jDatabaseMetaDataSpec extends Specification {
         ResultSet rs = conn.getMetaData().getSchemas()
 
         then:
-        rs.next()
-
-        when: "check existence of specified columns "
-        rs.getString("TABLE_SCHEM")
-        rs.getString("TABLE_CATALOG")
-
-        then:
-        notThrown(SQLException)
-
-        when:
-        rs.getString("INVALID_COLUMN")
-
-        then:
-        thrown(SQLException)
-
-        and:
         !rs.next()
-
     }
 
     def "get tables"() {
         when:
-//        createTableMetaData( gdb );
         ResultSet rs = conn.getMetaData().getTables( null, null, "%", null );
 
         then: "we have a result"
@@ -82,7 +63,9 @@ class Neo4jDatabaseMetaDataSpec extends Specification {
          "TYPE_SCHEM",
          "TYPE_NAME",
          "SELF_REFERENCING_COL_NAME",
-         "REF_GENERATION"].every { rs.getString(it); true; } // does not throw exception
+         "REF_GENERATION"].every {
+            rs.getString(it); true;
+        } // does not throw exception
         rs.getString("TABLE_NAME") == "Person"
         rs.getString("TABLE_TYPE") == "TABLE"
 
@@ -106,8 +89,31 @@ class Neo4jDatabaseMetaDataSpec extends Specification {
 */
 
     def "get columns"() {
+        when:
         ResultSet rs = conn.getMetaData().getColumns( null, null, "%", null );
+        def keys = []
+        def meta = rs.getMetaData();
+        for (int i=1; i<=meta.getColumnCount(); i++) {
+            keys << meta.getColumnName(i)
+        }
+        
+        then:
+        keys == ["TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE", "TYPE_NAME", "COLUMN_SIZE", "BUFFER_LENGTH", "DECIMAL_DIGITS", "NUM_PREC_RADIX", "NULLABLE", "REMARKS", "COLUMN_DEF", "SQL_DATA_TYPE", "SQL_DATETIME_SUB", "CHAR_OCTET_LENGTH", "ORDINAL_POSITION", "IS_NULLABLE", "SCOPE_CATALOG", "SCOPE_SCHEMA", "SCOPE_TABLE", "SOURCE_DATA_TYPE", "IS_AUTOINCREMENT"]
 
-        System.out.println( rs );
+        when:
+        def rows = []
+        while (rs.next()) {
+            def row=[]
+            for (int i=1; i<=meta.getColumnCount(); i++) {
+                row << rs.getString(i)
+            }
+            rows << row
+        }
+
+        then:
+        rows == [
+                [null, null, "Person", "name", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
+
+        ]
     }
 }

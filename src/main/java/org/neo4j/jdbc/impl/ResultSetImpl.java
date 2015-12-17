@@ -23,14 +23,17 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.jdbc.meta.Neo4jResultSetMetaData;
+import org.neo4j.jdbc.meta.NullValue;
 
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.net.URL;
 import java.sql.*;
-import java.sql.Date;
-import java.util.*;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Stefan Armbruster
@@ -39,14 +42,24 @@ public class ResultSetImpl implements ResultSet {
     private final Result result;
     private final Statement statement;
     private final int maxRows;
+    private final List<String> fieldNames;
     private int currentRow = 0;
     private Value lastReadValue = null;
-    private Neo4jResultSetMetaData meta;
+    private ResultSetMetaData meta;
 
     public ResultSetImpl(Statement statement, Result result, int maxRows) {
         this.statement = statement;
         this.result = result;
         this.maxRows = maxRows;
+        this.fieldNames = Iterables.toList(result.fieldNames());
+    }
+
+    public ResultSetImpl(Result result) {
+        this(null, result, -1);
+    }
+
+    public ResultSetImpl(Statement statement, Result result) {
+        this(statement, result, -1);
     }
 
     @Override
@@ -60,7 +73,9 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public void close() throws SQLException {
-        statement.close();
+        if (statement!=null) {
+            statement.close();
+        }
     }
 
     @Override
@@ -110,7 +125,7 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
-        throw new UnsupportedOperationException();
+        return new BigDecimal(getDouble(columnIndex), new MathContext(scale));
     }
 
     @Override
@@ -190,7 +205,7 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public BigDecimal getBigDecimal(String columnLabel, int scale) throws SQLException {
-        throw new UnsupportedOperationException();
+        return new BigDecimal(getDouble(columnLabel), new MathContext(scale));
     }
 
     @Override
@@ -262,7 +277,7 @@ public class ResultSetImpl implements ResultSet {
     @Override
     public ResultSetMetaData getMetaData() throws SQLException {
         if (meta == null) {
-            meta = new Neo4jResultSetMetaData(Iterables.toList(result.fieldNames()));
+            meta = new ProxyResultSetMetaData(new Neo4jResultSetMetaData(result));
         } else {
             System.out.println("reusing resultset meta data");
         }
@@ -271,70 +286,39 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public Object getObject(int columnIndex) throws SQLException {
-        return getObject(safeGet(columnIndex));
+        return ValueUtils.valueToObject(safeGet(columnIndex));
     }
 
     @Override
     public Object getObject(String columnLabel) throws SQLException {
-        return getObject(safeGet(columnLabel));
-    }
-
-    private Object getObject(Value value) {
-        if (value.isBoolean()) {
-            return value.javaBoolean();
-        } else if (value.isFloat()) {
-            return value.javaFloat();
-        } else if (value.isFloat()) {
-            return value.javaFloat();
-        } else if (value.isIdentity()) {
-            return value.asIdentity();
-        } else if (value.isInteger()) {
-            return value.javaInteger();
-        } else if (value.isList()) {
-            List list = new ArrayList((int) value.size());
-            for (long i=0; i < value.size(); i++) {
-                list.add(value.get(i));
-            }
-            return list;
-        } else if (value.isMap()) {
-            Map map = new HashMap((int) value.size());
-            for (String key: value.keys()) {
-                map.put(key, value.get(key));
-            }
-            return map;
-        } else if (value.isNode()) {
-            return value.asNode();
-        } else if (value.isPath()) {
-            return value.asPath();
-        } else if (value.isRelationship()) {
-            return value.asRelationship();
-        } else if (value.isString()) {
-            return value.javaString();
-        }
-        throw new IllegalStateException("could not make sense out of Value instance " + value.toString());
+        return ValueUtils.valueToObject(safeGet(columnLabel));
     }
 
     private Value safeGet(int columnIndex) throws SQLException {
         try {
             lastReadValue = result.get(columnIndex - 1);
-            return lastReadValue;
+            return lastReadValue == null ? new NullValue() : lastReadValue;
         } catch (IndexOutOfBoundsException e) {
             throw new SQLDataException("invalid column index", e);
         }
     }
 
     private Value safeGet(String columnLabel) throws SQLException {
-        lastReadValue = result.get(columnLabel);
-        if (lastReadValue == null) {
+        int index = columnIndex(columnLabel);
+        return safeGet(index+1);
+    }
+
+    private int columnIndex(String columnLabel) throws SQLDataException {
+        int index = fieldNames.indexOf(columnLabel);
+        if (index == -1) {
             throw new SQLDataException("invalid column name for result set: " + columnLabel);
-        } else {
-            return lastReadValue;
         }
+        return index;
     }
 
     @Override
     public int findColumn(String columnLabel) throws SQLException {
-        throw new UnsupportedOperationException();
+        return columnIndex(columnLabel);
     }
 
     @Override
@@ -349,12 +333,12 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
-        throw new UnsupportedOperationException();
+        return new BigDecimal(getDouble(columnIndex));
     }
 
     @Override
     public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
-        throw new UnsupportedOperationException();
+        return new BigDecimal(getDouble(columnLabel));
     }
 
     @Override
