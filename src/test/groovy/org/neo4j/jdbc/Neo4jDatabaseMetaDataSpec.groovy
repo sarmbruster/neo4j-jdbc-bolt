@@ -132,9 +132,10 @@ class Neo4jDatabaseMetaDataSpec extends Specification {
         size == resultSize
 
         where:
-        cypher                            | sqlType      | resultSize
-//        "match (n) return n"              | Types.STRUCT | 1
-        "match (n:UnknownLabel) return n" | Types.NULL   | 0
+        cypher                             | sqlType       | resultSize
+        "match (n) return n"               | Types.STRUCT  | 1
+        "match (n:UnknownLabel) return n"  | Types.NULL    | 0
+        "unwind [1,2,3,4,5] as x return x" | Types.INTEGER | 5
     }
 
 

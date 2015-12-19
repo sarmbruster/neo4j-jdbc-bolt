@@ -44,7 +44,6 @@ public class ResultSetImpl implements ResultSet {
     private final Statement statement;
     private final int maxRows;
     private final List<String> fieldNames;
-    private int currentRow = 0;
     private Value lastReadValue = null;
     private ResultSetMetaData meta;
 
@@ -69,12 +68,11 @@ public class ResultSetImpl implements ResultSet {
     @Override
     public boolean next() throws SQLException {
         if (maxRows > 0) {
-          if (currentRow >= maxRows) { return false; }
+          if (resultCursor.position() >= maxRows) { return false; }
         }
-        currentRow++;
         if (resultCursorPreIterated) {
             resultCursorPreIterated = false;
-            return !resultCursor.atEnd();
+            return resultCursor.hasRecord();
         } else {
             return resultCursor.next();
         }
