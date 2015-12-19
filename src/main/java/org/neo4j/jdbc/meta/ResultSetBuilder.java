@@ -18,9 +18,12 @@
  */
 package org.neo4j.jdbc.meta;
 
-import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.InternalResultCursor;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.jdbc.impl.ResultSetImpl;
-import org.neo4j.jdbc.impl.ValueUtils;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -35,10 +38,8 @@ import java.util.List;
  */
 public class ResultSetBuilder {
     private List<String> columns = new ArrayList<>();
-
-    private List<List<Value>> data = new ArrayList<>();
-
-    private List<Value> currentRow = new ArrayList<>();
+    private List<Value> currentRow = null;
+    final private List<Record> body = new ArrayList<>();
 
     public ResultSetBuilder column(String name) {
         columns.add(name);
@@ -46,17 +47,23 @@ public class ResultSetBuilder {
     }
 
     public ResultSetBuilder rowData(Collection<Object> values) {
+
+        amendRow();
         currentRow = new ArrayList<>();
         for (Object obj: values) {
-            currentRow.add(ValueUtils.objectToValue(obj));
+            currentRow.add(Values.value(obj));
         }
-
         for (int i = currentRow.size(); i < columns.size(); i++) {
             currentRow.add(null);
         }
-
-        data.add(currentRow);
         return this;
+    }
+
+    private void amendRow() {
+        if (currentRow!=null) {
+            body.add(new InternalRecord(columns, null, currentRow.toArray(new Value[currentRow.size()])));
+        }
+        currentRow = null;
     }
 
     public ResultSetBuilder row(Object... values) {
@@ -68,12 +75,14 @@ public class ResultSetBuilder {
         if (i == -1) {
             throw new IllegalArgumentException("No such column declared:" + name);
         }
-        currentRow.set(i, ValueUtils.objectToValue(obj));
+        currentRow.set(i, Values.value(obj));
         return this;
     }
 
     public ResultSet newResultSet(Connection connection) throws SQLException {
-        return new ResultSetImpl(new MetaResult(columns, data));
+        amendRow();
+        return new ResultSetImpl(new InternalResultCursor(columns, body, null));
+//        return new ResultSetImpl(new MetaResult(columns, data));
     }
 
 }

@@ -18,10 +18,10 @@
  */
 package org.neo4j.jdbc.impl;
 
-import org.neo4j.driver.Result;
-import org.neo4j.driver.ResultSummary;
-import org.neo4j.driver.UpdateStatistics;
-import org.neo4j.driver.internal.SimpleResult;
+import org.neo4j.driver.internal.InternalResultCursor;
+import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultSummary;
+import org.neo4j.driver.v1.UpdateStatistics;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -36,7 +36,7 @@ import java.util.Collections;
 public class StatementImpl implements Statement {
     protected final ConnectionImpl connection;
 
-    private Result result;
+    private ResultCursor resultCursor;
     private int maxRows = 0;
     private ResultSummary summary;
 
@@ -46,7 +46,7 @@ public class StatementImpl implements Statement {
 
     @Override
     public ResultSetImpl executeQuery(String cypher) throws SQLException {
-        setResult(connection.executeQuery(cypher, Collections.EMPTY_MAP));
+        setResultCursor(connection.executeQuery(cypher, Collections.EMPTY_MAP));
         return getResultSet();
     }
 
@@ -58,22 +58,22 @@ public class StatementImpl implements Statement {
 
     public ResultSummary getSummary() {
         if (summary==null) {
-            summary = result.summarize();
+            summary = resultCursor.summarize();
         }
         return summary;
     }
 
-    public Result getResult() {
-        return result;
+    public ResultCursor getResultCursor() {
+        return resultCursor;
     }
 
-    public void setResult(Result result) {
-        this.result = result;
+    public void setResultCursor(ResultCursor resultCursor) {
+        this.resultCursor = resultCursor;
         this.summary = null;
     }
 
 
-    protected int count(Result result) {
+    protected int count(ResultCursor result) {
         int count = 0;
         while (result.next()) {
             count++;
@@ -152,13 +152,13 @@ public class StatementImpl implements Statement {
 
     @Override
     public boolean execute(String cypher) throws SQLException {
-        result = connection.executeQuery(cypher, Collections.EMPTY_MAP);
+        resultCursor = connection.executeQuery(cypher, Collections.EMPTY_MAP);
         return true;
     }
 
     @Override
     public ResultSetImpl getResultSet() throws SQLException {
-        return new ResultSetImpl(this, result,  maxRows);
+        return new ResultSetImpl(this, resultCursor,  maxRows);
     }
 
     @Override
@@ -171,22 +171,22 @@ public class StatementImpl implements Statement {
     }
 
     /**
-     * workaround to do {@link Result#summarize()} without exhausting the iterator
+     * workaround to do {@link ResultCursor#summarize()} without exhausting the iterator
      * @return
      */
     private ResultSummary getSummaryWithoutExhaustingIterator() {
-        if (result instanceof SimpleResult)  {
+        if (resultCursor instanceof InternalResultCursor)  {
             try {
-                Field summaryField = SimpleResult.class.getDeclaredField("summary");
+                Field summaryField = InternalResultCursor.class.getDeclaredField("summary");
                 summaryField.setAccessible(true);
-                return (ResultSummary) summaryField.get(result);
+                return (ResultSummary) summaryField.get(resultCursor);
             } catch (NoSuchFieldException e) {
                 throw new RuntimeException(e);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
         }
-        throw new IllegalStateException("cannot access summary of a " + result.getClass().getName());
+        throw new IllegalStateException("cannot access summary of a " + resultCursor.getClass().getName());
     }
 
     @Override

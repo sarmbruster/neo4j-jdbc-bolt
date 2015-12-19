@@ -18,10 +18,10 @@
  */
 package org.neo4j.jdbc.impl;
 
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.jdbc.meta.FullScanCachedGraphMetaData;
 import org.neo4j.jdbc.meta.GraphMetaData;
 import org.neo4j.jdbc.meta.Neo4jDatabaseMetaData;
@@ -30,8 +30,6 @@ import java.sql.*;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
-
-//import org.neo4j.jdbc.Neo4jDatabaseMetaData;
 
 /**
  * @author Stefan Armbruster
@@ -328,7 +326,7 @@ public class ConnectionImpl implements Connection {
         throw new UnsupportedOperationException();
     }
 
-    public Result executeQuery(final String query, Map<String, Value> parameters) throws SQLException {
+    public ResultCursor executeQuery(final String query, Map<String, Value> parameters) throws SQLException {
         checkClosed("execute");
         checkReadOnly(query);
         try {

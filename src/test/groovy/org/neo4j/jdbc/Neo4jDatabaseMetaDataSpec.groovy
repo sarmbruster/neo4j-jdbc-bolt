@@ -19,12 +19,10 @@
 package org.neo4j.jdbc
 
 import org.junit.Rule
-import org.neo4j.driver.util.TestNeo4j
+import org.neo4j.driver.v1.util.TestNeo4j
 import spock.lang.Specification
 
-import java.sql.Connection
-import java.sql.DriverManager
-import java.sql.ResultSet
+import java.sql.*
 
 class Neo4jDatabaseMetaDataSpec extends Specification {
 
@@ -116,4 +114,23 @@ class Neo4jDatabaseMetaDataSpec extends Specification {
 
         ]
     }
+
+    def "after getting metadata iterating the resultset does work"() {
+
+        when: "running statement and asking for column type"
+        Statement statement = conn.createStatement()
+        ResultSet rs = statement.executeQuery("match (n) return n")
+        def columnType = rs.metaData.getColumnType(1)
+//        def update = statement.updateCount
+        def size = 0
+        while (rs.next()) {
+            size ++
+        }
+
+        then:
+//        update == 0
+        columnType == Types.STRUCT
+        size == 1
+    }
+
 }

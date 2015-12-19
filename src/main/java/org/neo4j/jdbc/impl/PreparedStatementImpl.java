@@ -18,8 +18,8 @@
  */
 package org.neo4j.jdbc.impl;
 
-import org.neo4j.driver.StatementType;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.StatementType;
+import org.neo4j.driver.v1.Value;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -30,7 +30,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.v1.Values.value;
 
 /**
  * @author Stefan Armbruster
@@ -159,7 +159,7 @@ public class PreparedStatementImpl extends StatementImpl implements PreparedStat
 
     @Override
     public boolean execute() throws SQLException {
-        setResult(connection.executeQuery(cypher, parameters));
+        setResultCursor(connection.executeQuery(cypher, parameters));
         StatementType type = getSummary().statementType();
         switch (type) {
             case WRITE_ONLY:

@@ -18,7 +18,7 @@
  */
 package org.neo4j.jdbc.meta;
 
-import org.neo4j.driver.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.jdbc.impl.ConnectionImpl;
 
 import java.sql.*;
@@ -91,8 +91,8 @@ public class Neo4jDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public String getDatabaseProductVersion() throws SQLException {
-        Result result = connectionImpl.getSession().run("explain match (n) return n limit 1");
-        return result.summarize().plan().arguments().get("version").javaString(); // TODO: change this to Neo4j instance version information when bolt supports it
+        ResultCursor resultCursor = connectionImpl.getSession().run("explain match (n) return n limit 1");
+        return resultCursor.summarize().plan().arguments().get("version").asString(); // TODO: change this to Neo4j instance version information when bolt supports it
     }
 
     @Override

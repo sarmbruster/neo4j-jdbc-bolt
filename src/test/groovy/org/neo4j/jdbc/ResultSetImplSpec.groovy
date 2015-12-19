@@ -1,7 +1,7 @@
 package org.neo4j.jdbc
 
-import org.neo4j.driver.Result
 import org.neo4j.driver.internal.value.StringValue
+import org.neo4j.driver.v1.ResultCursor
 import org.neo4j.jdbc.impl.ResultSetImpl
 import spock.lang.Specification
 
@@ -10,19 +10,15 @@ import spock.lang.Specification
  */
 class ResultSetImplSpec extends Specification {
 
-    Result result = Mock()
-
-    def setup() {
-        result.fieldNames() >> []
-    }
+    ResultCursor resultCursor = Mock()
 
     def "validate maxRows setting is used"() {
         when: "execute next() 10 times"
-        def cut = new ResultSetImpl(null, result, maxRows)
+        def cut = new ResultSetImpl(null, resultCursor, maxRows)
         (1..10).each{ cut.next() }
 
         then: "check how many of those passed throgh to result"
-        cardinality * result.next()
+        cardinality * resultCursor.next()
 
         where:
         maxRows | cardinality
@@ -31,9 +27,10 @@ class ResultSetImplSpec extends Specification {
     }
 
     def "check wasNull method"() {
-        when:
-        result.get(0) >> new StringValue("dummy")
-        def cut = new ResultSetImpl(null, result, -1)
+        when: "mock the resultcursor"
+        resultCursor.value(0) >> new StringValue("dummy")
+        resultCursor.keys() >> ["v"]
+        def cut = new ResultSetImpl(null, resultCursor, -1)
 
         then:
         cut.wasNull() == true

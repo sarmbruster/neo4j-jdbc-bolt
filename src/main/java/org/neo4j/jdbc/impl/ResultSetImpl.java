@@ -18,13 +18,15 @@
  */
 package org.neo4j.jdbc.impl;
 
-import org.neo4j.driver.Notification;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.util.Iterables;
+import org.neo4j.driver.internal.InternalResultCursor;
+import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.driver.v1.Notification;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.jdbc.meta.Neo4jResultSetMetaData;
-import org.neo4j.jdbc.meta.NullValue;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -39,7 +41,7 @@ import java.util.Map;
  * @author Stefan Armbruster
  */
 public class ResultSetImpl implements ResultSet {
-    private final Result result;
+    private ResultCursor resultCursor;
     private final Statement statement;
     private final int maxRows;
     private final List<String> fieldNames;
@@ -47,19 +49,19 @@ public class ResultSetImpl implements ResultSet {
     private Value lastReadValue = null;
     private ResultSetMetaData meta;
 
-    public ResultSetImpl(Statement statement, Result result, int maxRows) {
+    public ResultSetImpl(Statement statement, ResultCursor result, int maxRows) {
         this.statement = statement;
-        this.result = result;
+        this.resultCursor = result;
         this.maxRows = maxRows;
-        this.fieldNames = Iterables.toList(result.fieldNames());
+        this.fieldNames = result.keys();
     }
 
-    public ResultSetImpl(Result result) {
+    public ResultSetImpl(ResultCursor result) {
         this(null, result, -1);
     }
 
-    public ResultSetImpl(Statement statement, Result result) {
-        this(statement, result, -1);
+    public ResultSetImpl(Statement statement, ResultCursor resultCursor) {
+        this(statement, resultCursor, -1);
     }
 
     @Override
@@ -68,7 +70,7 @@ public class ResultSetImpl implements ResultSet {
           if (currentRow >= maxRows) { return false; }
         }
         currentRow++;
-        return result.next();
+        return resultCursor.next();
     }
 
     @Override
@@ -85,42 +87,43 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public String getString(int columnIndex) throws SQLException {
-        return safeGet(columnIndex).javaString();
+        Value value = safeGet(columnIndex);
+        return value instanceof NullValue ? null : value.asString();
     }
 
     @Override
     public boolean getBoolean(int columnIndex) throws SQLException {
-        return safeGet(columnIndex).javaBoolean();
+        return safeGet(columnIndex).asBoolean();
     }
 
     @Override
     public byte getByte(int columnIndex) throws SQLException {
-        return (byte)safeGet(columnIndex).javaInteger();
+        return safeGet(columnIndex).asByte();
     }
 
     @Override
     public short getShort(int columnIndex) throws SQLException {
-        return (short)safeGet(columnIndex).javaInteger();
+        return safeGet(columnIndex).asShort();
     }
 
     @Override
     public int getInt(int columnIndex) throws SQLException {
-        return safeGet(columnIndex).javaInteger();
+        return safeGet(columnIndex).asInt();
     }
 
     @Override
     public long getLong(int columnIndex) throws SQLException {
-        return safeGet(columnIndex).javaLong();
+        return safeGet(columnIndex).asLong();
     }
 
     @Override
     public float getFloat(int columnIndex) throws SQLException {
-        return safeGet(columnIndex).javaFloat();
+        return safeGet(columnIndex).asFloat();
     }
 
     @Override
     public double getDouble(int columnIndex) throws SQLException {
-        return safeGet(columnIndex).javaDouble();
+        return safeGet(columnIndex).asDouble();
     }
 
     @Override
@@ -130,7 +133,7 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public byte[] getBytes(int columnIndex) throws SQLException {
-        throw new UnsupportedOperationException();
+        return safeGet(columnIndex).asByteArray();
     }
 
     @Override
@@ -160,47 +163,48 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public InputStream getBinaryStream(int columnIndex) throws SQLException {
-        throw new UnsupportedOperationException();
+        return new ByteArrayInputStream(safeGet(columnIndex).asByteArray());
     }
 
     @Override
     public String getString(String columnLabel) throws SQLException {
-        return safeGet(columnLabel).javaString();
+        Value value = safeGet(columnLabel);
+        return value instanceof NullValue ? null : value.asString();
     }
 
     @Override
     public boolean getBoolean(String columnLabel) throws SQLException {
-        return safeGet(columnLabel).javaBoolean();
+        return safeGet(columnLabel).asBoolean();
     }
 
     @Override
     public byte getByte(String columnLabel) throws SQLException {
-        return (byte) safeGet(columnLabel).javaInteger();
+        return safeGet(columnLabel).asByte();
     }
 
     @Override
     public short getShort(String columnLabel) throws SQLException {
-        return (short) safeGet(columnLabel).javaInteger();
+        return safeGet(columnLabel).asShort();
     }
 
     @Override
     public int getInt(String columnLabel) throws SQLException {
-        return safeGet(columnLabel).javaInteger();
+        return safeGet(columnLabel).asInt();
     }
 
     @Override
     public long getLong(String columnLabel) throws SQLException {
-        return safeGet(columnLabel).javaLong();
+        return safeGet(columnLabel).asLong();
     }
 
     @Override
     public float getFloat(String columnLabel) throws SQLException {
-        return safeGet(columnLabel).javaFloat();
+        return safeGet(columnLabel).asFloat();
     }
 
     @Override
     public double getDouble(String columnLabel) throws SQLException {
-        return safeGet(columnLabel).javaDouble();
+        return safeGet(columnLabel).asDouble();
     }
 
     @Override
@@ -210,7 +214,7 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public byte[] getBytes(String columnLabel) throws SQLException {
-        throw new UnsupportedOperationException();
+        return safeGet(columnLabel).asByteArray();
     }
 
     @Override
@@ -240,12 +244,12 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public InputStream getBinaryStream(String columnLabel) throws SQLException {
-        throw new UnsupportedOperationException();
+        return new ByteArrayInputStream(safeGet(columnLabel).asByteArray());
     }
 
     @Override
     public SQLWarning getWarnings() throws SQLException {
-        List<Notification> notifications = result.summarize().notifications();
+        List<Notification> notifications = resultCursor.summarize().notifications();
 
         SQLWarning firstWarning = null;
         SQLWarning prevWarning = null;
@@ -266,7 +270,6 @@ public class ResultSetImpl implements ResultSet {
     @Override
     public void clearWarnings() throws SQLException {
         // pass
-        //throw new UnsupportedOperationException();
     }
 
     @Override
@@ -277,30 +280,28 @@ public class ResultSetImpl implements ResultSet {
     @Override
     public ResultSetMetaData getMetaData() throws SQLException {
         if (meta == null) {
-            meta = new ProxyResultSetMetaData(new Neo4jResultSetMetaData(result));
-        } else {
-            System.out.println("reusing resultset meta data");
+            meta = new ProxyResultSetMetaData(new Neo4jResultSetMetaData(this));
         }
         return meta;
     }
 
     @Override
     public Object getObject(int columnIndex) throws SQLException {
-        return ValueUtils.valueToObject(safeGet(columnIndex));
+        return safeGet(columnIndex).asObject();
     }
 
     @Override
     public Object getObject(String columnLabel) throws SQLException {
-        return ValueUtils.valueToObject(safeGet(columnLabel));
+        return safeGet(columnLabel).asObject();
     }
 
     private Value safeGet(int columnIndex) throws SQLException {
-        try {
-            lastReadValue = result.get(columnIndex - 1);
-            return lastReadValue == null ? new NullValue() : lastReadValue;
-        } catch (IndexOutOfBoundsException e) {
-            throw new SQLDataException("invalid column index", e);
+        int startsWithNullIndex = columnIndex - 1;
+        if ((startsWithNullIndex < 0) || (startsWithNullIndex >= resultCursor.keys().size())) {
+            throw new SQLDataException("invalid column index " + columnIndex);
         }
+        lastReadValue = resultCursor.value(startsWithNullIndex);
+        return lastReadValue == null ? NullValue.NULL : lastReadValue;
     }
 
     private Value safeGet(String columnLabel) throws SQLException {
@@ -1065,4 +1066,15 @@ public class ResultSetImpl implements ResultSet {
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
         throw new UnsupportedOperationException();
     }
+
+    public List<Record> tee() {
+        List<Record> records = resultCursor.list();
+        resultCursor = new InternalResultCursor(resultCursor.keys(), records, resultCursor.summarize());
+        return records;
+    }
+
+    public ResultCursor getResultCursor() {
+        return resultCursor;
+    }
+
 }

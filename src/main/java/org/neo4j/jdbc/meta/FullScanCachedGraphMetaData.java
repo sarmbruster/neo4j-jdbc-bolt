@@ -1,9 +1,9 @@
 package org.neo4j.jdbc.meta;
 
-import org.neo4j.driver.Function;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Value;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -26,10 +26,10 @@ public class FullScanCachedGraphMetaData implements GraphMetaData {
     public Collection<String> getTables(String tableNamePattern) {
 
         if (labels == null) {
-            Result result = session.run("match (n) unwind labels(n) as l with distinct l as label return label order by label");
+            ResultCursor resultCursor = session.run("match (n) unwind labels(n) as l with distinct l as label return label order by label");
             labels = new ArrayList<>();
-            while (result.next()) {
-                labels.add(result.get("label").javaString());
+            while (resultCursor.next()) {
+                labels.add(resultCursor.value("label").asString());
             }
         }
 
@@ -39,14 +39,14 @@ public class FullScanCachedGraphMetaData implements GraphMetaData {
     @Override
     public Map<String, Collection<String>> getColumnsByTables(String tableNamePattern, String columnNamePattern) {
         if (labelsAndProps==null) {
-            Result result = session.run("match (n) unwind labels(n) as label unwind keys(n) as p return label, collect(distinct p) as props");
+            ResultCursor resultCursor = session.run("match (n) unwind labels(n) as label unwind keys(n) as p return label, collect(distinct p) as props");
             labelsAndProps = new HashMap<>();
-            while (result.next()) {
-                labelsAndProps.put(result.get("label").javaString(),
-                        result.get("props").javaList(new Function<Value, String>() {
+            while (resultCursor.next()) {
+                labelsAndProps.put(resultCursor.value("label").asString(),
+                        resultCursor.value("props").asList(new Function<Value, String>() {
                             @Override
                             public String apply(Value value) {
-                                return value.javaString();
+                                return value.asString();
                             }
                         }) );
             }
@@ -57,7 +57,6 @@ public class FullScanCachedGraphMetaData implements GraphMetaData {
         for (String label: filteredLabels) {
             filtered.put(label, filterList(labelsAndProps.get(label), columnNamePattern));
         }
-
         return filtered;
     }
 

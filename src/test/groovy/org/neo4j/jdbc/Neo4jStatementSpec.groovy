@@ -2,7 +2,7 @@ package org.neo4j.jdbc
 
 import groovy.sql.Sql
 import org.junit.Rule
-import org.neo4j.driver.util.TestNeo4j
+import org.neo4j.driver.v1.util.TestNeo4j
 import spock.lang.Specification
 
 import java.sql.*
@@ -112,7 +112,7 @@ class Neo4jStatementSpec extends Specification {
         rs.next() == true
 
         when:
-        rs.getObject(argument)
+        def x = rs.getObject(argument)
 
         then:
         def e = thrown exception
@@ -155,7 +155,7 @@ class Neo4jStatementSpec extends Specification {
         when:
         names = []
         sql.eachRow("match (n:Dummy) return n", {
-            names << it.n.property("name").javaString()
+            names << it.n.value("name").asString()
         })
 
         then:

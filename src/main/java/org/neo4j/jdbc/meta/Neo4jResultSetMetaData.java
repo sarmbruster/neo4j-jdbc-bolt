@@ -18,10 +18,10 @@
  */
 package org.neo4j.jdbc.meta;
 
-import org.neo4j.driver.Result;
-import org.neo4j.driver.ReusableResult;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.util.Iterables;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.NoRecordException;
+import org.neo4j.jdbc.impl.ResultSetImpl;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -74,18 +74,18 @@ public class Neo4jResultSetMetaData implements ResultSetMetaData {
         JDBC_TYPE_MAP.put(SQLXML, "SQLXML");
     }
 
-    private final Result result;
-    private final List<String> fieldNames;
-    private ReusableResult retainedResult;
+    private final ResultSetImpl resultSet;
+    private final List<String> keys;
+    private List<Record> retainedResult;
 
-    public Neo4jResultSetMetaData(Result result) {
-        this.result = result;
-        this.fieldNames = Iterables.toList(result.fieldNames());
+    public Neo4jResultSetMetaData(ResultSetImpl resultSet) {
+        this.resultSet = resultSet;
+        this.keys = resultSet.getResultCursor().keys();
     }
 
     @Override
     public int getColumnCount() throws SQLException {
-        return fieldNames.size();
+        return keys.size();
     }
 
     @Override
@@ -130,7 +130,7 @@ public class Neo4jResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public String getColumnName(int i) throws SQLException {
-        return fieldNames.get(i-1);
+        return keys.get(i-1);
     }
 
     @Override
@@ -162,43 +162,41 @@ public class Neo4jResultSetMetaData implements ResultSetMetaData {
     public int getColumnType(int i) throws SQLException {
         Value value = null;
         try {
-            value = result.get(i - 1);
-        } catch (NullPointerException e) { // TODO: bolt M01 throws NPE if result.next() is not yet called
+            value = resultSet.getResultCursor().value(i - 1);
+        } catch (NoRecordException e) {
             if (retainedResult==null) {
-                retainedResult = result.retain();
+                retainedResult = resultSet.tee();
             }
             if (retainedResult.size()>0) {
-                value = retainedResult.get(0).get(i - 1);
+                value = retainedResult.get(0).value(i - 1);
             }
         }
         return sqlTypeFor(value);
     }
 
     private int sqlTypeFor(Value value) {
-        if ((value == null) || (value instanceof NullValue)) {
+
+        if (value==null) {
             return NULL;
-        } else if (value.isBoolean()) {
-            return BOOLEAN;
-        } else if (value.isFloat()) {
-            return FLOAT;
-        } else if (value.isIdentity()) {
-            return NUMERIC;
-        } else if (value.isInteger()) {
-            return NUMERIC;
-        } else if (value.isList()) {
-            return ARRAY;
-        } else if (value.isMap()) {
-            return STRUCT;
-        } else if (value.isNode()) {
-            return STRUCT;
-        } else if (value.isPath()) {
-            return STRUCT;
-        } else if (value.isRelationship()) {
-            return STRUCT;
-        } else if (value.isString()) {
-            return VARCHAR;
-        } else {
-            throw new IllegalArgumentException("dunno know how to handle " + value);
+        }
+
+        String type = value.type().name();
+        switch (type) {
+            case "STRING": return VARCHAR;
+            case "ANY": return OTHER;
+            case "BOOLEAN": return BOOLEAN;
+            case "NUMBER": return NUMERIC;
+            case "INTEGER": return INTEGER;
+            case "FLOAT": return FLOAT;
+            case "LIST": return ARRAY;
+            case "MAP": return STRUCT; // not sure if that makes sense
+            case "NODE": return STRUCT;
+            case "RELATIONSHIP": return STRUCT;
+            case "PATH": return STRUCT;
+            case "NULL": return NULL;
+            case "IDENTITY": return ROWID;
+            default:
+                throw new IllegalArgumentException("dunno know how to handle " + value);
         }
     }
 

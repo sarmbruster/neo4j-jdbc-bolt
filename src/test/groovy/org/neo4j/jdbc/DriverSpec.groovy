@@ -1,7 +1,7 @@
 package org.neo4j.jdbc
 
 import org.junit.Rule
-import org.neo4j.driver.util.TestNeo4j
+import org.neo4j.driver.v1.util.TestNeo4j
 import spock.lang.Specification
 
 import java.sql.DriverManager

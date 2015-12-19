@@ -1,8 +1,8 @@
 package org.neo4j.jdbc.meta
 
 import org.junit.Rule
-import org.neo4j.driver.GraphDatabase
-import org.neo4j.driver.util.TestNeo4j
+import org.neo4j.driver.v1.GraphDatabase
+import org.neo4j.driver.v1.util.TestNeo4j
 import spock.lang.Specification
 
 /**

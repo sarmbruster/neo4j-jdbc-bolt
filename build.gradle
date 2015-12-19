@@ -14,10 +14,11 @@ repositories {
     maven { url "https://m2.neo4j.org/content/repositories/snapshots/" }
 }
 
-/*ext {
-    neo4jVersion = "2.3.0"
-    jettyVersion = "9.2.4.v20141103"
-}*/
+ext {
+//    neo4jVersion = "2.3.0"
+//    jettyVersion = "9.2.4.v20141103"
+    neo4jJavaDriverVersion = "1.0-SNAPSHOT"
+}
 
 /*
 shadowJar {
@@ -28,10 +29,11 @@ shadowJar {
 */
 
 dependencies {
-    compile "org.neo4j.driver:neo4j-java-driver:1.0.0-M01"
+    compile "org.neo4j.driver:neo4j-java-driver:$neo4jJavaDriverVersion"
 //    compile "org.neo4j.driver:neo4j-java-driver:1.0-SNAPSHOT"
 //    testCompile "org.neo4j.driver:neo4j-java-driver:1.0-SNAPSHOT:tests"
-    testCompile "org.neo4j.driver:neo4j-java-driver:1.0.0-M01:tests"
+    testCompile "org.neo4j.driver:neo4j-java-driver:$neo4jJavaDriverVersion:tests"
     testCompile "org.codehaus.groovy:groovy:2.4.5"
     testCompile 'org.spockframework:spock-core:1.0-groovy-2.4'
+    testCompile "org.rauschig:jarchivelib:0.5.0" // needed for @TestNeo4j rule
 }

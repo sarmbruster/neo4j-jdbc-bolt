@@ -18,8 +18,8 @@
  */
 package org.neo4j.jdbc;
 
-import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.jdbc.impl.ConnectionImpl;
 
 import java.sql.DriverManager;
