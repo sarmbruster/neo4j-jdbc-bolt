@@ -21,6 +21,7 @@ package org.neo4j.jdbc
 import org.junit.Rule
 import org.neo4j.driver.v1.util.TestNeo4j
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.sql.*
 
@@ -115,22 +116,26 @@ class Neo4jDatabaseMetaDataSpec extends Specification {
         ]
     }
 
+    @Unroll("#cypher should have #resultSize results")
     def "after getting metadata iterating the resultset does work"() {
-
         when: "running statement and asking for column type"
         Statement statement = conn.createStatement()
-        ResultSet rs = statement.executeQuery("match (n) return n")
+        ResultSet rs = statement.executeQuery(cypher)
         def columnType = rs.metaData.getColumnType(1)
-//        def update = statement.updateCount
         def size = 0
         while (rs.next()) {
             size ++
         }
 
         then:
-//        update == 0
-        columnType == Types.STRUCT
-        size == 1
+        columnType == sqlType
+        size == resultSize
+
+        where:
+        cypher                            | sqlType      | resultSize
+//        "match (n) return n"              | Types.STRUCT | 1
+        "match (n:UnknownLabel) return n" | Types.NULL   | 0
     }
+
 
 }

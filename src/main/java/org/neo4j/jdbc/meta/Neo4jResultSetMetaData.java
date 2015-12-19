@@ -160,18 +160,13 @@ public class Neo4jResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public int getColumnType(int i) throws SQLException {
-        Value value = null;
         try {
-            value = resultSet.getResultCursor().value(i - 1);
+            Value value = resultSet.fetchFirstRow().value(i - 1);
+            return sqlTypeFor(value);
         } catch (NoRecordException e) {
-            if (retainedResult==null) {
-                retainedResult = resultSet.tee();
-            }
-            if (retainedResult.size()>0) {
-                value = retainedResult.get(0).value(i - 1);
-            }
+            // if result set is empty we don't know the types, so returning NULL
+            return NULL;
         }
-        return sqlTypeFor(value);
     }
 
     private int sqlTypeFor(Value value) {

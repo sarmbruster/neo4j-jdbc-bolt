@@ -18,7 +18,6 @@
  */
 package org.neo4j.jdbc.impl;
 
-import org.neo4j.driver.internal.InternalResultCursor;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Notification;
 import org.neo4j.driver.v1.Record;
@@ -49,6 +48,9 @@ public class ResultSetImpl implements ResultSet {
     private Value lastReadValue = null;
     private ResultSetMetaData meta;
 
+    // is set to true if meta data needs to access first row before result iteration
+    private boolean resultCursorPreIterated = false;
+
     public ResultSetImpl(Statement statement, ResultCursor result, int maxRows) {
         this.statement = statement;
         this.resultCursor = result;
@@ -70,7 +72,20 @@ public class ResultSetImpl implements ResultSet {
           if (currentRow >= maxRows) { return false; }
         }
         currentRow++;
-        return resultCursor.next();
+        if (resultCursorPreIterated) {
+            resultCursorPreIterated = false;
+            return !resultCursor.atEnd();
+        } else {
+            return resultCursor.next();
+        }
+    }
+
+    public Record fetchFirstRow() {
+        if (resultCursor.position()==-1) {
+            resultCursorPreIterated = true;
+            resultCursor.next();
+        }
+        return resultCursor.record();
     }
 
     @Override
@@ -1065,12 +1080,6 @@ public class ResultSetImpl implements ResultSet {
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
         throw new UnsupportedOperationException();
-    }
-
-    public List<Record> tee() {
-        List<Record> records = resultCursor.list();
-        resultCursor = new InternalResultCursor(resultCursor.keys(), records, resultCursor.summarize());
-        return records;
     }
 
     public ResultCursor getResultCursor() {
